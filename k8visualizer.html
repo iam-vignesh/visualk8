@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kubernetes Resource Visualizer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+            color: #212529;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #007bff;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .subtitle {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        textarea, .error-console, .visualization {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        textarea {
+            height: 150px;
+            resize: vertical;
+        }
+        .error-console {
+            background-color: #f8d7da;
+            color: #721c24;
+            min-height: 40px;
+        }
+        .visualization {
+            height: 400px;
+            background-color: #e9ecef;
+        }
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            background-color: white;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Kubernetes Object Visualizer</h1>
+        <p class="subtitle"><b>Visualize your kubernetes objects for free.🔥 No signup required.😁</b></p>
+        
+        <textarea id="yamlInput" placeholder="Copy paste your K8 YAML config here. Seperate multiple configs using '---' in new line."></textarea>
+        
+        <div class="error-console" id="errorConsole">Error Console</div>
+
+        <button class="btn" onclick="visualizeResources()">Visualize</button>
+        
+        <h3>Kubernetes Object Map</h3>
+
+        <select id="filterKind" onchange="applyFilter()">
+            <option value="All">All Resources</option>
+            <option value="Deployment">Deployment</option>
+            <option value="Service">Service</option>
+            <option value="Pod">Pod</option>
+            <option value="Ingress">Ingress</option>
+            <option value="ConfigMap">ConfigMap</option>
+            <option value="Secret">Secret</option>
+            <option value="PersistentVolumeClaim">PersistentVolumeClaim</option>
+        </select>
+        
+        <div id="visualization" class="visualization"></div>
+    </div>
+
+    <script>
+        let network;
+        let allNodes;
+        let allEdges;
+
+        function visualizeResources() {
+            const yamlInput = document.getElementById('yamlInput');
+            const resources = yamlInput.value.split('---').map(doc => doc.trim()).filter(doc => doc);
+            const errorConsole = document.getElementById('errorConsole');
+
+            try {
+                const nodes = [];
+                const edges = [];
+                const resourceMap = new Map();
+
+                resources.forEach((resource, index) => {
+                    const obj = jsyaml.load(resource);
+                    if (!obj || !obj.kind || !obj.metadata || !obj.metadata.name) {
+                        throw new Error(`Invalid YAML in resource ${index + 1}`);
+                    }
+
+                    const id = `${obj.kind}-${obj.metadata.name}`;
+                    resourceMap.set(id, obj);
+
+                    nodes.push({
+                        id: id,
+                        label: `${obj.kind}\n${obj.metadata.name}`,
+                        shape: 'box',
+                        color: getColorForKind(obj.kind)
+                    });
+                });
+
+                resourceMap.forEach((obj, id) => {
+                    if (obj.kind === 'Service' && obj.spec && obj.spec.selector) {
+                        resourceMap.forEach((target, targetId) => {
+                            if (target.kind === 'Deployment' && target.spec && target.spec.template && target.spec.template.metadata && target.spec.template.metadata.labels) {
+                                if (matchLabels(obj.spec.selector, target.spec.template.metadata.labels)) {
+                                    edges.push({ from: id, to: targetId, arrows: 'to' });
+                                }
+                            }
+                        });
+                    }
+                });
+
+                allNodes = new vis.DataSet(nodes);
+                allEdges = new vis.DataSet(edges);
+                const data = { nodes: allNodes, edges: allEdges };
+                const options = {
+                    layout: { hierarchical: { enabled: true, direction: 'UD', sortMethod: 'directed' } },
+                    physics: { enabled: false }
+                };
+                const container = document.getElementById('visualization');
+                network = new vis.Network(container, data, options);
+
+                errorConsole.textContent = 'No YAML error detected.';
+                errorConsole.style.backgroundColor = '#d4edda';
+                errorConsole.style.color = '#155724';
+            } catch (error) {
+                console.error('Error parsing YAML:', error);
+                errorConsole.textContent = `Error: ${error.message}`;
+                errorConsole.style.backgroundColor = '#f8d7da';
+                errorConsole.style.color = '#721c24';
+            }
+        }
+
+        function matchLabels(selector, labels) {
+            return Object.entries(selector).every(([key, value]) => labels[key] === value);
+        }
+
+        function getColorForKind(kind) {
+            const colors = {
+                'Deployment': '#3498db',
+                'Service': '#2ecc71',
+                'Pod': '#e74c3c',
+                'Ingress': '#f39c12',
+                'ConfigMap': '#9b59b6',
+                'Secret': '#34495e',
+                'PersistentVolumeClaim': '#1abc9c'
+            };
+            return colors[kind] || '#bdc3c7';
+        }
+
+        function applyFilter() {
+            const filterKind = document.getElementById('filterKind').value;
+            const filteredNodes = allNodes.get({
+                filter: function (node) {
+                    return filterKind === 'All' || node.id.startsWith(filterKind);
+                }
+            });
+            network.setData({ nodes: filteredNodes, edges: allEdges });
+        }
+
+        // Initialize with empty visualization
+        visualizeResources();
+    </script>
+</body>
+</html>
