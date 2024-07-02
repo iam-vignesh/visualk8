@@ -1,144 +1,215 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kubernetes Resource Visualizer</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
-    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #cee6ff;
-            color: #212529;
-            line-height: 1.6;
-            margin: 0;
-            padding: 20px;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-        h1 {
-            color: #007bff;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .subtitle {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        textarea, .error-console, .visualization, .yaml-display {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 20px;
-            border: 1px solid #ced4da;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-        textarea {
-            height: 150px;
-            resize: vertical;
-        }
-        .error-console {
-            background-color: #f8d7da;
-            color: #721c24;
-            min-height: 40px;
-        }
-        .visualization {
-            height: 400px;
-            background-color: #ffffff;
-        }
-        #yamlContainer {
-            margin-top: 20px;
-        }
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Kubernetes Resource Visualizer</title>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+        <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+        <style>
+            :root {
+                --primary-color: #4a90e2;
+                --secondary-color: #f5f7fa;
+                --text-color: #333;
+                --border-color: #e0e0e0;
+                --success-color: #28a745;
+                --error-color: #dc3545;
+            }
+    
+            body {
+                font-family: 'Inter', sans-serif;
+                background-color: var(--secondary-color);
+                color: var(--text-color);
+                line-height: 1.6;
+                margin: 0;
+                padding: 0;
+            }
+    
+            .container {
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 40px 20px;
+            }
+    
+            header {
+                background-color: white;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                padding: 20px 0;
+            }
+    
+            h1 {
+                color: var(--primary-color);
+                text-align: center;
+                margin-bottom: 10px;
+                font-weight: 700;
+            }
+    
+            .subtitle {
+                text-align: center;
+                margin-bottom: 30px;
+                color: #666;
+            }
+    
+            .card {
+                background-color: white;
+                border-radius: 8px;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                padding: 20px;
+                margin-bottom: 30px;
+            }
+    
+            textarea, .error-console, .visualization, .yaml-display {
+                width: 100%;
+                padding: 15px;
+                margin-bottom: 20px;
+                border: 1px solid var(--border-color);
+                border-radius: 4px;
+                box-sizing: border-box;
+                font-size: 14px;
+            }
+    
+            textarea {
+                height: 200px;
+                resize: vertical;
+            }
+    
+            .error-console {
+                background-color: var(--secondary-color);
+                color: var(--text-color);
+                min-height: 40px;
+            }
+    
+            .visualization {
+                height: 500px;
+                background-color: white;
+            }
+    
+            #yamlContainer {
+                margin-top: 30px;
+            }
+    
+            #yamlObjectName {
+                margin-bottom: 10px;
+                font-weight: 600;
+            }
+    
+            .yaml-display {
+                height: 300px;
+                background-color: #f8f9fa;
+                overflow-y: auto;
+                font-family: monospace;
+                white-space: pre-wrap;
+            }
+    
+            .btn {
+                display: inline-block;
+                padding: 12px 24px;
+                background-color: var(--primary-color);
+                color: white;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 16px;
+                font-weight: 600;
+                transition: background-color 0.3s ease;
+            }
+    
+            .btn:hover {
+                background-color: #3a7bc8;
+            }
+    
+            select {
+                width: 100%;
+                padding: 12px;
+                margin-bottom: 20px;
+                border: 1px solid var(--border-color);
+                border-radius: 4px;
+                background-color: white;
+                font-size: 16px;
+                appearance: none;
+                background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23333' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+                background-repeat: no-repeat;
+                background-position: right 12px center;
+            }
+    
+            footer {
+                text-align: center;
+                padding: 20px 0;
+                font-size: 0.9em;
+                color: #666;
+                background-color: white;
+                border-top: 1px solid var(--border-color);
+            }
+    
+            .footer-link {
+                color: var(--primary-color);
+                text-decoration: none;
+            }
+    
+            .footer-link:hover {
+                text-decoration: underline;
+            }
 
-        #yamlObjectName {
-            margin-bottom: 10px;
-            font-weight: bold;
-        }
-        .yaml-display {
-            width: 100%;
-            height: 200px;
-            padding: 10px;
-            border: 1px solid #ced4da;
-            border-radius: 4px;
-            background-color: #f8f9fa;
-            overflow-y: auto;
-            font-family: monospace;
-            white-space: pre-wrap;
-        }
-        .btn {
-            display: block;
-            width: 100%;
-            padding: 10px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            margin-bottom: 20px;
-        }
-        .btn:hover {
-            background-color: #0056b3;
-        }
-        select {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 20px;
-            border: 1px solid #ced4da;
-            border-radius: 4px;
-            background-color: white;
-            font-size: 16px;
-        }
-        footer {
-            text-align: center;
-            padding: 20px 0;
-            font-size: 0.8em;
-            color: #6c757d;
-        }
-        .footer-link {
-            color: #007bff;
-            text-decoration: none;
-        }
-        .footer-link:hover {
-            text-decoration: underline;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Kubernetes Cluster Visualizer</h1>
-        <p class="subtitle"><b>Visualize your Kubernetes Cluster for free.🔥 No signup required!😁</b></p>
-        
-        <textarea id="yamlInput" placeholder="Copy paste your K8 YAML config. Seperate multiple configs using '---' in new line."></textarea>
-        
-        <div class="error-console" id="errorConsole">Error Console</div>
+            .kubernetesdocs{
+                align-items: center;
+            }
+    
+            @media (max-width: 768px) {
+                .container {
+                    padding: 20px 10px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <h1>Kubernetes Cluster Visualizer</h1>
+            <p class="subtitle"><strong>Visualize your Kubernetes Cluster for free🚀. No signup required!🔥</strong></p>
+        </header>
+    
+        <div class="container">
+            <div class="card">
+                <h3>YAML Editor</h3>
+                <textarea id="yamlInput" placeholder="Paste your Kubernetes YAML configs here. Separate multiple configs using '---' in new line."></textarea>
+                
+                <div class="error-console" id="errorConsole">Error Console</div>
+    
+                <button class="btn" onclick="visualizeResources()">Visualize</button>
+            </div>
+            
+            <div class="card">
+                <h3>Your Cluster Map</h3>
+    
+                <select id="filterKind" onchange="applyFilter()">
+                    <option value="All">All Resources</option>
+                    <option value="Deployment">Deployment</option>
+                    <option value="Service">Service</option>
+                    <option value="Pod">Pod</option>
+                    <option value="Ingress">Ingress</option>
+                    <option value="ConfigMap">ConfigMap</option>
+                    <option value="Secret">Secret</option>
+                    <option value="PersistentVolumeClaim">PersistentVolumeClaim</option>
+                </select>
+                
+                <div id="visualization" class="visualization"></div>
+            </div>
+    
+            <div id="yamlContainer" class="card" style="display: none;">
+                <h3 id="yamlObjectName">Select an object to display their YAML config</h3>
+                <div id="yamlDisplay" class="yaml-display"></div>
+            </div>
 
-        <button class="btn" onclick="visualizeResources()">Visualize</button>
-        
-        <h3>Your Cluster Map</h3>
+            <div id="kubernetesdocs" class="card">
+                <h3>Useful Links</h3>
+                <a href="https://kubernetes.io/docs/home/" target="_blank" class="footer-link">Kubernetes Docs</a>
+                <br>
+                <a href="https://kubernetes.io/docs/concepts/overview/working-with-objects/" target="_blank" class="footer-link">Understanding Kubernetes Objects</a>
+                <br>
+                <a href="https://kubernetes.io/docs/concepts/configuration/overview/" target="_blank" class="footer-link">Kubernetes Configuration Best Practices</a>
+            </div>
 
-        <select id="filterKind" onchange="applyFilter()">
-            <option value="All">All Resources</option>
-            <option value="Deployment">Deployment</option>
-            <option value="Service">Service</option>
-            <option value="Pod">Pod</option>
-            <option value="Ingress">Ingress</option>
-            <option value="ConfigMap">ConfigMap</option>
-            <option value="Secret">Secret</option>
-            <option value="PersistentVolumeClaim">PersistentVolumeClaim</option>
-        </select>
-        
-        <div id="visualization" class="visualization"></div>
-
-        <div id="yamlContainer" style="display: none;">
-            <h3 id="yamlObjectName">Select an object to display their YAML config!</h3>
-            <div id="yamlDisplay" class="yaml-display"></div>
         </div>
-    </div>
 
     <script>
         let network;
