@@ -9,7 +9,7 @@
     <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
     <style>
         body {
-            font-family: 'poppins', sans-serif, 'Inter';
+            font-family: 'Inter', sans-serif;
             background-color: #cee6ff;
             color: #212529;
             line-height: 1.6;
@@ -29,7 +29,7 @@
             text-align: center;
             margin-bottom: 20px;
         }
-        textarea, .error-console, .visualization {
+        textarea, .error-console, .visualization, .yaml-display {
             width: 100%;
             padding: 10px;
             margin-bottom: 20px;
@@ -49,6 +49,25 @@
         .visualization {
             height: 400px;
             background-color: #ffffff;
+        }
+        #yamlContainer {
+            margin-top: 20px;
+        }
+
+        #yamlObjectName {
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        .yaml-display {
+            width: 100%;
+            height: 200px;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+            overflow-y: auto;
+            font-family: monospace;
+            white-space: pre-wrap;
         }
         .btn {
             display: block;
@@ -73,6 +92,19 @@
             border-radius: 4px;
             background-color: white;
             font-size: 16px;
+        }
+        footer {
+            text-align: center;
+            padding: 20px 0;
+            font-size: 0.8em;
+            color: #6c757d;
+        }
+        .footer-link {
+            color: #007bff;
+            text-decoration: none;
+        }
+        .footer-link:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
@@ -101,22 +133,29 @@
         </select>
         
         <div id="visualization" class="visualization"></div>
+
+        <div id="yamlContainer" style="display: none;">
+            <h3 id="yamlObjectName">Select an object to display their YAML config!</h3>
+            <div id="yamlDisplay" class="yaml-display"></div>
+        </div>
     </div>
 
     <script>
         let network;
         let allNodes;
         let allEdges;
+        let resourceMap = new Map();
 
         function visualizeResources() {
             const yamlInput = document.getElementById('yamlInput');
             const resources = yamlInput.value.split('---').map(doc => doc.trim()).filter(doc => doc);
             const errorConsole = document.getElementById('errorConsole');
+            const yamlContainer = document.getElementById('yamlContainer');
 
             try {
                 const nodes = [];
                 const edges = [];
-                const resourceMap = new Map();
+                resourceMap.clear();
 
                 resources.forEach((resource, index) => {
                     const obj = jsyaml.load(resource);
@@ -125,7 +164,7 @@
                     }
 
                     const id = `${obj.kind}-${obj.metadata.name}`;
-                    resourceMap.set(id, obj);
+                    resourceMap.set(id, { yaml: resource, obj: obj });
 
                     nodes.push({
                         id: id,
@@ -135,11 +174,13 @@
                     });
                 });
 
-                resourceMap.forEach((obj, id) => {
+                resourceMap.forEach((resource, id) => {
+                    const obj = resource.obj;
                     if (obj.kind === 'Service' && obj.spec && obj.spec.selector) {
                         resourceMap.forEach((target, targetId) => {
-                            if (target.kind === 'Deployment' && target.spec && target.spec.template && target.spec.template.metadata && target.spec.template.metadata.labels) {
-                                if (matchLabels(obj.spec.selector, target.spec.template.metadata.labels)) {
+                            const targetObj = target.obj;
+                            if (targetObj.kind === 'Deployment' && targetObj.spec && targetObj.spec.template && targetObj.spec.template.metadata && targetObj.spec.template.metadata.labels) {
+                                if (matchLabels(obj.spec.selector, targetObj.spec.template.metadata.labels)) {
                                     edges.push({ from: id, to: targetId, arrows: 'to' });
                                 }
                             }
@@ -154,17 +195,34 @@
                     layout: { hierarchical: { enabled: true, direction: 'UD', sortMethod: 'directed' } },
                     physics: { enabled: false }
                 };
+
                 const container = document.getElementById('visualization');
+
                 network = new vis.Network(container, data, options);
+                network.on("click", function (params) {
+            if (params.nodes.length > 0) {
+                const nodeId = params.nodes[0];
+                displayYAML(nodeId);
+                }
+                });
+
+                network.on("click", function (params) {
+                    if (params.nodes.length > 0) {
+                        const nodeId = params.nodes[0];
+                        displayYAML(nodeId);
+                    }
+                });
 
                 errorConsole.textContent = 'No YAML error detected.';
                 errorConsole.style.backgroundColor = '#d4edda';
                 errorConsole.style.color = '#155724';
+                yamlContainer.style.display = 'block';
             } catch (error) {
                 console.error('Error parsing YAML:', error);
                 errorConsole.textContent = `Error: ${error.message}`;
                 errorConsole.style.backgroundColor = '#f8d7da';
                 errorConsole.style.color = '#721c24';
+                yamlContainer.style.display = 'none';
             }
         }
 
@@ -195,9 +253,27 @@
             network.setData({ nodes: filteredNodes, edges: allEdges });
         }
 
-        // Initialize with empty visualization
-        visualizeResources();
+        function displayYAML(nodeId) {
+            const yamlDisplay = document.getElementById('yamlDisplay');
+            const yamlObjectName = document.getElementById('yamlObjectName');
+            if (resourceMap.has(nodeId)) {
+                const resource = resourceMap.get(nodeId);
+                const obj = resource.obj;
+                yamlDisplay.textContent = resource.yaml;
+                yamlObjectName.textContent = `${obj.kind}: ${obj.metadata.name}`;
+                yamlDisplay.textContent = resource.yaml;
+            } else {
+                yamlDisplay.textContent = 'No YAML configuration found for this node.';
+                yamlDisplay.textContent = 'Click on a node in the visualization to see its YAML configuration.';
+            }
+        }
+
+        // // Initialize with empty visualization
+        // visualizeResources();
     </script>
-    <footer><p>Made by</p></footer>
+
+    <footer>
+        Made with ❤️ by <a href="https://www.linkedin.com/in/yourprofile" target="_blank" class="footer-link">Vignesh Ravi</a>
+    </footer>
 </body>
 </html>
