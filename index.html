@@ -9,8 +9,8 @@
     <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
     <style>
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f8f9fa;
+            font-family: 'poppins', sans-serif, 'Inter';
+            background-color: #cee6ff;
             color: #212529;
             line-height: 1.6;
             margin: 0;
@@ -48,7 +48,7 @@
         }
         .visualization {
             height: 400px;
-            background-color: #e9ecef;
+            background-color: #ffffff;
         }
         .btn {
             display: block;
@@ -78,16 +78,16 @@
 </head>
 <body>
     <div class="container">
-        <h1>Kubernetes Object Visualizer</h1>
-        <p class="subtitle"><b>Visualize your kubernetes objects for free.🔥 No signup required.😁</b></p>
+        <h1>Kubernetes Cluster Visualizer</h1>
+        <p class="subtitle"><b>Visualize your Kubernetes Cluster for free.🔥 No signup required!😁</b></p>
         
-        <textarea id="yamlInput" placeholder="Copy paste your K8 YAML config here. Seperate multiple configs using '---' in new line."></textarea>
+        <textarea id="yamlInput" placeholder="Copy paste your K8 YAML config. Seperate multiple configs using '---' in new line."></textarea>
         
         <div class="error-console" id="errorConsole">Error Console</div>
 
         <button class="btn" onclick="visualizeResources()">Visualize</button>
         
-        <h3>Kubernetes Object Map</h3>
+        <h3>Your Cluster Map</h3>
 
         <select id="filterKind" onchange="applyFilter()">
             <option value="All">All Resources</option>
@@ -198,5 +198,6 @@
         // Initialize with empty visualization
         visualizeResources();
     </script>
+    <footer><p>Made by</p></footer>
 </body>
 </html>
