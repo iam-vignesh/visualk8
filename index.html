@@ -11,9 +11,9 @@
         <link rel="icon" type="image/x-icon" href="./assets/favicon-32x32.png">
         <style>
             :root {
-                --primary-color: #4a90e2;
+                --primary-color: #125198;
                 --secondary-color: #f5f7fa;
-                --text-color: #333;
+                --text-color: #212121;
                 --border-color: #e0e0e0;
                 --success-color: #28a745;
                 --error-color: #dc3545;
@@ -31,7 +31,8 @@
             .container {
                 max-width: 1200px;
                 margin: 0 auto;
-                padding: 40px 20px;
+                /* padding: 40px 20px; */
+                padding-top: 40px !important;
             }
     
             header {
@@ -39,19 +40,36 @@
                 box-shadow: 0 2px 4px rgba(0,0,0,0.1);
                 padding: 20px 0;
             }
-    
-            h1 {
+/*     
+             h1 {
                 color: var(--primary-color);
                 text-align: center;
                 margin-bottom: 10px;
                 font-weight: 700;
+                padding: 40px 20px;
                 
-            }
+            } */
     
-            .subtitle {
+            /* .subtitle {
                 text-align: center;
                 margin-bottom: 30px;
                 color: #666;
+            } */
+
+                
+            h1 {
+                color: var(--primary-color);
+                font-weight: 700;
+                padding-top: 20px !important;
+                padding-left: 10px !important;
+                padding-bottom: 5px !important;
+                
+            }
+
+            .subtitle {
+                max-width: 1200px;
+                margin: 0 auto;
+                padding-left: 10px;
             }
     
             .card {
@@ -143,6 +161,7 @@
                 color: #666;
                 background-color: white;
                 border-top: 1px solid var(--border-color);
+                
             }
     
             .footer-link {
@@ -232,8 +251,8 @@
     </head>
     <body>
         <header>
-            <h1>Kubernetes Cluster Visualizer</h1>
-            <p class="subtitle"><strong>Visualize your Kubernetes Cluster for free🚀. No signup required!🔥</strong></p>
+            <h1 class="container">Kubernetes Cluster Visualizer</h1>
+            <p class="subtitle"><strong>Visualize your Kubernetes Cluster for free🚀<br>No signup required!🔥</strong></p>
         </header>
 
         <div class="container">
@@ -381,6 +400,13 @@
                 errorConsole.style.backgroundColor = '#d4edda';
                 errorConsole.style.color = '#155724';
                 yamlContainer.style.display = 'block';
+
+            if (nodes.length > 0) {
+                    yamlContainer.style.display = 'block';
+            } else {
+                    yamlContainer.style.display = 'none';
+                }
+
             } catch (error) {
                 console.error('Error parsing YAML:', error);
                 errorConsole.textContent = `Error: ${error.message}`;
